@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>3D Shape Generator - Three.js Shape Generator & Collada Exporter</title>
+
+	<style>
+		:root {
+			--bg-deep: #06060c;
+			--bg-radial: radial-gradient(circle at 70% 30%, #15152a 0%, #06060c 80%);
+			--bg-panel: rgba(10, 10, 20, 0.6);
+			--bg-panel-solid: #0d0d16;
+			--border-color: rgba(255, 255, 255, 0.08);
+			--border-color-focus: rgba(14, 165, 233, 0.4);
+			--text-primary: #f8fafc;
+			--text-secondary: #94a3b8;
+			--text-muted: #64748b;
+			--accent-purple: #10b981; /* Green */
+			--accent-indigo: #0ea5e9; /* Blue */
+			--accent-glow: rgba(14, 165, 233, 0.3);
+			--accent-gradient: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+			--accent-light: #2dd4bf; /* Bright teal/cyan */
+			--radius-lg: 16px;
+			--radius-md: 12px;
+			--radius-sm: 8px;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+			background: var(--bg-deep);
+			background-image: var(--bg-radial);
+			color: var(--text-primary);
+			height: 100vh;
+			width: 100vw;
+			overflow: hidden;
+			display: grid;
+			grid-template-columns: 380px 1fr;
+			grid-template-rows: 100vh;
+		}
+
+		/* Sidebar Layout */
+		.sidebar {
+			--bg-panel: rgba(241, 245, 249, 0.75); /* Light Slate/Grey Glass background */
+			--border-color: rgba(15, 23, 42, 0.08); /* Slate border */
+			--text-primary: #0f172a; /* Slate 900 */
+			--text-secondary: #475569; /* Slate 600 */
+			--text-muted: #64748b; /* Slate 500 */
+			background: var(--bg-panel);
+			backdrop-filter: blur(25px);
+			-webkit-backdrop-filter: blur(25px);
+			border-right: 1px solid var(--border-color);
+			display: flex;
+			flex-direction: column;
+			height: 100vh;
+			max-height: 100vh;
+			overflow: hidden;
+			z-index: 10;
+			box-shadow: 10px 0 40px rgba(15, 23, 42, 0.05);
+			position: relative;
+		}
+
+		.sidebar::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			width: 1px;
+			background: linear-gradient(to bottom, transparent, var(--accent-indigo), var(--accent-purple), transparent);
+			opacity: 0.3;
+			pointer-events: none;
+		}
+
+		.sidebar-header {
+			padding: 24px;
+			border-bottom: 1px solid var(--border-color);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 12px;
+		}
+
+		.logo-icon {
+			width: 38px;
+			height: 38px;
+			background: var(--accent-gradient);
+			border-radius: var(--radius-md);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);
+		}
+
+		.sidebar-header h1 {
+			font-size: 1.35rem;
+			font-weight: 700;
+			letter-spacing: -0.025em;
+			background: linear-gradient(to right, #0f172a, #475569);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			text-align: center;
+		}
+
+		.sidebar-content {
+			flex: 1;
+			overflow-y: auto;
+			padding: 24px;
+			display: flex;
+			flex-direction: column;
+			gap: 28px;
+		}
+
+		/* Custom Scrollbar for Sidebar */
+		.sidebar-content::-webkit-scrollbar {
+			width: 8px;
+		}
+		.sidebar-content::-webkit-scrollbar-track {
+			background: rgba(0, 0, 0, 0.01);
+			border-radius: 10px;
+		}
+		.sidebar-content::-webkit-scrollbar-thumb {
+			background: rgba(15, 23, 42, 0.15);
+			border-radius: 10px;
+			border: 2px solid transparent;
+			background-clip: padding-box;
+		}
+		.sidebar-content::-webkit-scrollbar-thumb:hover {
+			background: rgba(15, 23, 42, 0.3);
+			border: 2px solid transparent;
+			background-clip: padding-box;
+		}
+
+		/* Sidebar Light Theme Customizations */
+		.sidebar .control-group {
+			background: rgba(255, 255, 255, 0.45);
+			border: 1px solid rgba(0, 0, 0, 0.04);
+		}
+
+		.sidebar select {
+			background: rgba(255, 255, 255, 0.85);
+			border: 1px solid rgba(0, 0, 0, 0.08);
+			color: var(--text-primary);
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+			background-repeat: no-repeat;
+			background-position: right 14px center;
+			background-size: 16px;
+			padding-right: 40px;
+		}
+
+		.sidebar select option {
+			background: #f1f5f9;
+			color: #0f172a;
+		}
+
+		.sidebar input[type="range"] {
+			background: rgba(0, 0, 0, 0.08);
+		}
+
+		.sidebar input[type="range"]:hover {
+			background: rgba(0, 0, 0, 0.12);
+		}
+
+		.sidebar .color-picker-container {
+			background: rgba(255, 255, 255, 0.85);
+			border: 1px solid rgba(0, 0, 0, 0.08);
+		}
+
+		.sidebar .form-field label span.val {
+			background: rgba(0, 0, 0, 0.05);
+			color: var(--text-primary);
+		}
+
+		.section-title {
+			font-size: 0.75rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			color: var(--text-muted);
+			margin-bottom: 14px;
+		}
+
+		.control-group {
+			background: rgba(255, 255, 255, 0.02);
+			border: 1px solid rgba(255, 255, 255, 0.03);
+			border-radius: var(--radius-lg);
+			padding: 16px;
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+		}
+
+		/* Form Elements */
+		.form-field {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.form-field.checkbox-row {
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			padding: 6px 0;
+		}
+
+		.form-field label {
+			font-size: 0.85rem;
+			font-weight: 500;
+			color: var(--text-secondary);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.form-field label span.val {
+			color: var(--text-primary);
+			font-weight: 600;
+			font-family: monospace;
+			font-size: 0.85rem;
+			background: rgba(255, 255, 255, 0.05);
+			padding: 2px 6px;
+			border-radius: 4px;
+		}
+
+		select {
+			width: 100%;
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid var(--border-color);
+			border-radius: var(--radius-sm);
+			padding: 10px 14px;
+			color: var(--text-primary);
+			font-family: inherit;
+			font-size: 0.9rem;
+			outline: none;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			appearance: none;
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+			background-repeat: no-repeat;
+			background-position: right 14px center;
+			background-size: 16px;
+			padding-right: 40px;
+		}
+
+		select:focus {
+			border-color: var(--accent-indigo);
+			box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+		}
+
+		input[type="range"] {
+			-webkit-appearance: none;
+			width: 100%;
+			height: 5px;
+			border-radius: 3px;
+			background: rgba(255, 255, 255, 0.08);
+			outline: none;
+			accent-color: var(--accent-indigo);
+			cursor: pointer;
+			transition: background 0.2s ease;
+		}
+
+		input[type="range"]:hover {
+			background: rgba(255, 255, 255, 0.12);
+		}
+
+		input[type="checkbox"] {
+			width: 18px;
+			height: 18px;
+			accent-color: var(--accent-indigo);
+			cursor: pointer;
+			border-radius: 4px;
+		}
+
+		.color-picker-container {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid var(--border-color);
+			border-radius: var(--radius-sm);
+			padding: 6px 12px;
+		}
+
+		.color-picker-wrapper {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		input[type="color"] {
+			-webkit-appearance: none;
+			border: none;
+			width: 28px;
+			height: 28px;
+			border-radius: 6px;
+			cursor: pointer;
+			background: none;
+		}
+
+		input[type="color"]::-webkit-color-swatch-wrapper {
+			padding: 0;
+		}
+
+		input[type="color"]::-webkit-color-swatch {
+			border: 1px solid rgba(255, 255, 255, 0.15);
+			border-radius: 6px;
+		}
+
+		.color-hex {
+			font-family: monospace;
+			font-size: 0.85rem;
+			text-transform: uppercase;
+			color: var(--text-secondary);
+			font-weight: 500;
+		}
+
+		/* Sidebar Action Panel / Export Button Container */
+		.sidebar-action {
+			padding: 20px 24px;
+			border-bottom: 1px solid var(--border-color);
+			background: rgba(10, 10, 20, 0.15);
+		}
+
+		.btn-export {
+			width: 100%;
+			background: var(--accent-gradient);
+			border: none;
+			border-radius: var(--radius-md);
+			color: white;
+			padding: 14px 24px;
+			font-family: inherit;
+			font-size: 0.95rem;
+			font-weight: 600;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 10px;
+			transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+			box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+		}
+
+		.btn-export:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+			background: linear-gradient(135deg, var(--accent-light), var(--accent-purple));
+		}
+
+		.btn-export:active {
+			transform: translateY(0);
+			box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+		}
+
+		/* Viewport Frame */
+		.viewport-container {
+			position: relative;
+			width: 100%;
+			height: 100%;
+			outline: none;
+			background: radial-gradient(circle at center, #ffffff 0%, #a1a1aa 100%);
+		}
+
+		#canvas-container {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+			top: 0;
+			left: 0;
+			overflow: hidden;
+		}
+
+		#canvas-container canvas {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100% !important;
+			height: 100% !important;
+		}
+
+		/* Shape Selection Grid of Icons */
+		.shape-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 8px;
+			margin-top: 6px;
+		}
+
+		.shape-item {
+			background: rgba(255, 255, 255, 0.45);
+			border: 1px solid rgba(0, 0, 0, 0.04);
+			border-radius: var(--radius-sm);
+			/* width: 64px; */
+			/* height: 64px; */
+			padding: 10px 4px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+			cursor: pointer;
+			transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+			color: var(--text-secondary);
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01);
+			user-select: none;
+		}
+
+		.shape-item:hover {
+			background: rgba(255, 255, 255, 0.85);
+			border-color: var(--accent-indigo);
+			color: var(--accent-indigo);
+			transform: translateY(-1px);
+			box-shadow: 0 4px 10px rgba(14, 165, 233, 0.08);
+		}
+
+		.shape-item.active {
+			background: var(--accent-gradient);
+			border-color: transparent;
+			color: white;
+			box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+		}
+
+		.shape-item svg {
+			width: 20px;
+			height: 20px;
+			stroke: currentColor;
+			stroke-width: 1.8;
+			fill: none;
+			stroke-linecap: round;
+			stroke-linejoin: round;
+			transition: transform 0.2s ease;
+		}
+
+		.shape-item:hover svg {
+			transform: scale(1.1) rotate(4deg);
+		}
+
+		.shape-item.active svg {
+			stroke-width: 2.2;
+		}
+
+		.shape-item span {
+			font-size: 0.72rem;
+			font-weight: 600;
+			text-align: center;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			width: 100%;
+		}
+
+		/* Overlay HUD Cards */
+		.hud-card {
+			position: absolute;
+			background: rgba(8, 8, 16, 0.6);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			border: 1px solid var(--border-color);
+			border-radius: var(--radius-md);
+			padding: 12px 18px;
+			pointer-events: auto;
+			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+			z-index: 5;
+		}
+
+		.hud-stats {
+			top: 24px;
+			right: 24px;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			min-width: 150px;
+		}
+
+		.hud-stats-item {
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+			font-weight: 500;
+			display: flex;
+			justify-content: space-between;
+		}
+
+		.hud-stats-item span {
+			font-family: monospace;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+
+		.hud-controls {
+			position: absolute;
+			top: 24px;
+			left: 24px;
+			display: flex;
+			gap: 10px;
+			z-index: 10;
+		}
+
+		.hud-btn {
+			background: rgba(15, 23, 42, 0.9);
+			border: 1px solid rgba(255, 255, 255, 0.16);
+			border-radius: var(--radius-sm);
+			color: var(--text-secondary);
+			width: 40px;
+			height: 40px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s ease;
+			position: relative;
+		}
+
+		.hud-btn:hover {
+			background: rgba(30, 41, 59, 0.98);
+			border-color: rgba(255, 255, 255, 0.28);
+			color: var(--text-primary);
+		}
+
+		.hud-btn.active {
+			background: rgba(14, 165, 233, 0.45);
+			border-color: var(--accent-indigo);
+			color: var(--accent-light);
+			box-shadow: 0 0 10px rgba(14, 165, 233, 0.2);
+		}
+
+		/* Interactive Coordinate Axes Icon Styling */
+		#btn-axes.active .axis-x {
+			stroke: #ef4444; /* Red for X */
+		}
+		#btn-axes.active .axis-y {
+			stroke: #22c55e; /* Green for Y */
+		}
+		#btn-axes.active .axis-z {
+			stroke: #3b82f6; /* Blue for Z */
+		}
+
+		/* Tooltip */
+		.hud-btn::before {
+			content: attr(data-tooltip);
+			position: absolute;
+			top: 125%;
+			left: 50%;
+			transform: translateX(-50%) translateY(5px);
+			background: var(--bg-panel-solid);
+			border: 1px solid var(--border-color);
+			color: var(--text-primary);
+			padding: 6px 10px;
+			font-size: 0.75rem;
+			border-radius: 4px;
+			white-space: nowrap;
+			opacity: 0;
+			pointer-events: none;
+			transition: all 0.2s ease;
+			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+		}
+
+		.hud-btn:hover::before {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
+
+		/* Toast Notification */
+		.toast {
+			position: absolute;
+			bottom: 90px;
+			left: 50%;
+			transform: translateX(-50%) translateY(20px);
+			background: rgba(16, 185, 129, 0.9);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+			color: white;
+			padding: 12px 28px;
+			border-radius: 30px;
+			font-size: 0.9rem;
+			font-weight: 600;
+			box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+			opacity: 0;
+			pointer-events: none;
+			transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+			z-index: 100;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.toast.show {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
+
+		/* Responsive adjustments */
+		@media (max-width: 768px) {
+			body {
+				grid-template-columns: 1fr;
+				grid-template-rows: 1fr auto;
+			}
+			.sidebar {
+				height: 380px;
+				max-height: 45vh;
+				width: 100%;
+				border-right: none;
+				border-top: 1px solid var(--border-color);
+			}
+			.hud-stats {
+				top: 16px;
+				right: 16px;
+			}
+			.hud-controls {
+				top: 16px;
+				left: 16px;
+				bottom: auto;
+				right: auto;
+			}
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Sidebar -->
+	<aside class="sidebar">
+		<div class="sidebar-header">
+			<div class="logo-icon">
+				<!-- Cube SVG Logo -->
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+					<polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+					<line x1="12" y1="22.08" x2="12" y2="12"></line>
+				</svg>
+			</div>
+			<h1>3D Shape Generator</h1>
+		</div>
+
+		<div class="sidebar-action">
+			<button class="btn-export" id="btn-export">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+					<polyline points="7 10 12 15 17 10"></polyline>
+					<line x1="12" y1="15" x2="12" y2="3"></line>
+				</svg>
+				Export Collada (.dae)
+			</button>
+		</div>
+
+		<div class="sidebar-content">
+			<!-- Shape Type -->
+			<div>
+				<h2 class="section-title">1. Shape Type</h2>
+				<div class="shape-grid" id="shape-grid">
+					<!-- Populated dynamically via JS with SVG icons -->
+				</div>
+			</div>
+
+			<!-- Geometry Parameters -->
+			<div>
+				<h2 class="section-title">2. Parameters</h2>
+				<div class="control-group" id="dynamic-params">
+					<!-- Dynamically populated via JS -->
+				</div>
+			</div>
+
+			<!-- Material & Shading Settings -->
+			<div>
+				<h2 class="section-title">3. Material Style</h2>
+				<div class="control-group">
+					<!-- Color -->
+					<div class="form-field">
+						<label>Color</label>
+						<div class="color-picker-container">
+							<div class="color-picker-wrapper">
+								<input type="color" id="material-color" value="#c6e7fb">
+								<span class="color-hex" id="color-hex-label">#c6e7fb</span>
+							</div>
+						</div>
+					</div>
+					<!-- Roughness -->
+					<div class="form-field">
+						<label for="material-roughness">Roughness <span class="val" id="val-roughness">0.2</span></label>
+						<input type="range" id="material-roughness" min="0" max="1" step="0.01" value="0.2">
+					</div>
+					<!-- Metalness -->
+					<div class="form-field">
+						<label for="material-metalness">Metalness <span class="val" id="val-metalness">0.2</span></label>
+						<input type="range" id="material-metalness" min="0" max="1" step="0.01" value="0.2">
+					</div>
+					<!-- Shading Toggles -->
+					<div class="form-field checkbox-row">
+						<label for="material-flat">Flat Shading</label>
+						<input type="checkbox" id="material-flat">
+					</div>
+					<div class="form-field checkbox-row">
+						<label for="material-grid">Grid Texture</label>
+						<input type="checkbox" id="material-grid" checked>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</aside>
+
+	<!-- Viewport -->
+	<main class="viewport-container">
+		<!-- Stats HUD -->
+		<div class="hud-card hud-stats">
+			<div class="hud-stats-item">Vertices: <span id="vertex-count">0</span></div>
+			<div class="hud-stats-item">Polygons: <span id="face-count">0</span></div>
+		</div>
+
+		<!-- Controls HUD -->
+		<div class="hud-controls">
+			<button class="hud-btn active" id="btn-grid" data-tooltip="Toggle Grid" aria-label="Toggle Grid">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+					<line x1="9" y1="3" x2="9" y2="21"></line>
+					<line x1="15" y1="3" x2="15" y2="21"></line>
+					<line x1="3" y1="9" x2="21" y2="9"></line>
+					<line x1="3" y1="15" x2="21" y2="15"></line>
+				</svg>
+			</button>
+			<button class="hud-btn active" id="btn-axes" data-tooltip="Toggle Axes" aria-label="Toggle Axes">
+				<svg class="axes-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path class="axis-y" d="M 5 19 L 5 4 M 2.5 7 L 5 4 L 7.5 7"></path>
+					<path class="axis-x" d="M 5 19 L 20 19 M 17 16.5 L 20 19 L 17 21.5"></path>
+					<path class="axis-z" d="M 5 19 L 16 8 M 12.5 9 L 16 8 L 15 11.5"></path>
+					<circle cx="5" cy="19" r="1.5" fill="currentColor"></circle>
+				</svg>
+			</button>
+			<button class="hud-btn" id="btn-wireframe" data-tooltip="Wireframe Mode" aria-label="Wireframe Mode">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10"></circle>
+					<path d="M2 12h20"></path>
+					<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+				</svg>
+			</button>
+			<button class="hud-btn" id="btn-reset-cam" data-tooltip="Reset Camera" aria-label="Reset Camera">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M15 3h6v6"></path>
+					<path d="M9 21H3v-6"></path>
+					<path d="M21 3l-7 7"></path>
+					<path d="M3 21l7-7"></path>
+				</svg>
+			</button>
+		</div>
+
+		<!-- Canvas Container -->
+		<div id="canvas-container"></div>
+
+		<!-- Toast Alert -->
+		<div class="toast" id="toast">
+			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="20 6 9 17 4 12"></polyline>
+			</svg>
+			<span id="toast-message">Export Successful!</span>
+		</div>
+	</main>
+
+	<!-- Import Maps for Modern ESM Loading of Three.js -->
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "./three.module.min.js",
+				"three/addons/controls/OrbitControls.js": "./OrbitControls.min.js",
+				"three/addons/exporters/ColladaExporter.js": "./ColladaExporter.js"
+			}
+		}
+	</script>
+
+	<!-- Main JavaScript App -->
+	<script type="module">
+		import * as THREE from 'three';
+		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		import { ColladaExporter } from 'three/addons/exporters/ColladaExporter.js';
+
+		// Define 2D star shape for ExtrudeGeometry
+		const starShape = new THREE.Shape();
+		const spikes = 5;
+		const outerRadius = 1.2;
+		const innerRadius = 0.5;
+		for (let i = 0; i < spikes * 2; i++) {
+			const angle = (i * Math.PI) / spikes;
+			const currRadius = i % 2 === 0 ? outerRadius : innerRadius;
+			const x = Math.cos(angle) * currRadius;
+			const y = Math.sin(angle) * currRadius;
+			if (i === 0) starShape.moveTo(x, y);
+			else starShape.lineTo(x, y);
+		}
+		starShape.closePath();
+
+		// Define points for LatheGeometry
+		const lathePoints = [];
+		for (let i = 0; i < 12; i++) {
+			const x = Math.sin(i * 0.4) * 0.6 + 0.8;
+			const y = (i - 5.5) * 0.4;
+			lathePoints.push(new THREE.Vector2(x, y));
+		}
+
+		// Helper to generate a procedural grid texture using a canvas
+		function createGridTexture() {
+			const size = 256;
+			const canvas = document.createElement('canvas');
+			canvas.width = size;
+			canvas.height = size;
+			const ctx = canvas.getContext('2d');
+
+			const step = 32; // 8x8 grid cells
+
+			// Draw filled rectangles for each cell
+			for (let row = 0; row < 8; row++) {
+				for (let col = 0; col < 8; col++) {
+					const u = col / 7;
+					const v = 1 - row / 7;
+
+					const r = Math.round(u * 255);
+					const g = Math.round(v * 255);
+
+					// Fill color
+					ctx.fillStyle = `rgb(${r}, ${g}, 0)`;
+					ctx.fillRect(col * step, row * step, step, step);
+
+					// Thin border around cell to preserve grid lines
+					ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+					ctx.lineWidth = 1;
+					ctx.strokeRect(col * step, row * step, step, step);
+				}
+			}
+
+			const texture = new THREE.CanvasTexture(canvas);
+			texture.wrapS = THREE.RepeatWrapping;
+			texture.wrapT = THREE.RepeatWrapping;
+			return texture;
+		}
+
+		const gridTexture = createGridTexture();
+
+		// Shapes Metadata & Icons
+		const shapesData = {
+			box: {
+				label: 'Box',
+				svg: `<svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
+			},
+			sphere: {
+				label: 'Sphere',
+				svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3" stroke-dasharray="2 2"/><ellipse cx="12" cy="12" rx="3" ry="9" stroke-dasharray="2 2"/></svg>`
+			},
+			cylinder: {
+				label: 'Cylinder',
+				svg: `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="2.5"/><ellipse cx="12" cy="19" rx="7" ry="2.5"/><line x1="5" y1="5" x2="5" y2="19"/><line x1="19" y1="5" x2="19" y2="19"/></svg>`
+			},
+			cone: {
+				label: 'Cone',
+				svg: `<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="3" y2="19"/><line x1="12" y1="2" x2="21" y2="19"/><ellipse cx="12" cy="19" rx="9" ry="3"/></svg>`
+			},
+			capsule: {
+				label: 'Capsule',
+				svg: `<svg viewBox="0 0 24 24"><rect x="7" y="4" width="10" height="16" rx="5"/></svg>`
+			},
+			tube: {
+				label: 'Tube',
+				svg: `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><ellipse cx="12" cy="5" rx="4" ry="1.5"/><ellipse cx="12" cy="19" rx="8" ry="3"/><ellipse cx="12" cy="19" rx="4" ry="1.5"/><line x1="4" y1="5" x2="4" y2="19"/><line x1="20" y1="5" x2="20" y2="19"/><line x1="8" y1="5" x2="8" y2="19" stroke-dasharray="1 1" opacity="0.5"/><line x1="16" y1="5" x2="16" y2="19" stroke-dasharray="1 1" opacity="0.5"/></svg>`
+			},
+			torus: {
+				label: 'Torus',
+				svg: `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="5"/><ellipse cx="12" cy="12" rx="4" ry="2"/></svg>`
+			},
+			torusKnot: {
+				label: 'Torus knot',
+				svg: `<svg viewBox="0 0 24 24"><path d="m 18.07,16.0 c 0.33,-0.1,0.65,-0.24,0.96,-0.4,1.36,-0.74,2.33,-2.14,2.33,-3.6,-0.0,-1.46,-0.97,-2.86,-2.33,-3.6,-1.36,-0.74,-2.98,-0.8,-4.15,-0.67,-1.17,0.13,-1.89,0.35,-2.46,0.08,-0.57,-0.28,-1.12,-1.07,-2.16,-1.88,-0.12,-0.09,-0.24,-0.18,-0.37,-0.27 m -1.8,-0.9 c -0.62,-0.2,-1.28,-0.32,-1.93,-0.28,-1.53,0.08,-2.94,0.99,-3.5,2.35,-0.56,1.36,-0.22,3.05,0.66,4.31,0.87,1.26,2.17,2.03,3.09,2.5,0.92,0.47,1.4,0.75,1.6,1.45,0.19,0.64,0.22,1.67,0.63,2.84 m 0.93,1.78 c 0.57,0.78,1.33,1.44,2.21,1.79,1.41,0.56,3.04,0.24,4.09,-0.81,1.05,-1.05,1.45,-2.75,1.26,-4.23,-0.18,-1.48,-0.86,-2.66,-1.24,-3.44,-0.38,-0.78,-0.38,-1.25,0.0,-2.04,0.27,-0.56,0.68,-1.31,0.97,-2.23 m 0.31,-1.99 c -0.01,-1.27,-0.44,-2.58,-1.31,-3.45,-1.05,-1.05,-2.69,-1.36,-4.09,-0.81,-1.41,0.55,-2.49,1.91,-3.01,3.23,-0.53,1.32,-0.55,2.49,-0.75,3.19,-0.2,0.7,-0.68,0.97,-1.6,1.45,-0.47,0.24,-1.03,0.56,-1.59,0.98 m -1.43,1.42 c -0.02,0.03,-0.05,0.07,-0.07,0.1,-0.87,1.26,-1.21,2.95,-0.66,4.31,0.55,1.36,1.97,2.27,3.5,2.35,1.53,0.08,3.07,-0.64,4.1,-1.45,1.03,-0.81,1.58,-1.6,2.16,-1.88,0.57,-0.28,1.29,-0.06,2.46,0.08,0.37,0.04,0.78,0.06,1.21,0.05"/></svg>`
+			},
+			icosahedron: {
+				label: 'Icosa',
+				svg: `<svg viewBox="0 0 24 24"><path d="M 5.06 12.05 L 8.93 20.8 M 5.06 12.05 L 5.22 4.92 M 5.06 12.05 L 12.52 4.92 M 5.06 12.05 L 3.0 14.74 M 5.06 12.05 L 14.81 14.74 M 15.07 3.2 L 18.94 11.95 M 15.07 3.2 L 5.22 4.92 M 15.07 3.2 L 12.52 4.92 M 15.07 3.2 L 9.19 9.26 M 15.07 3.2 L 21.0 9.26 M 8.93 20.8 L 11.48 19.08 M 8.93 20.8 L 18.78 19.08 M 8.93 20.8 L 3.0 14.74 M 8.93 20.8 L 14.81 14.74 M 18.94 11.95 L 11.48 19.08 M 18.94 11.95 L 18.78 19.08 M 18.94 11.95 L 9.19 9.26 M 18.94 11.95 L 21.0 9.26 M 5.22 4.92 L 12.52 4.92 M 5.22 4.92 L 3.0 14.74 M 5.22 4.92 L 9.19 9.26 M 11.48 19.08 L 18.78 19.08 M 11.48 19.08 L 3.0 14.74 M 11.48 19.08 L 9.19 9.26 M 12.52 4.92 L 14.81 14.74 M 12.52 4.92 L 21.0 9.26 M 18.78 19.08 L 14.81 14.74 M 18.78 19.08 L 21.0 9.26 M 3.0 14.74 L 9.19 9.26 M 14.81 14.74 L 21.0 9.26"/></svg>`
+			},
+			dodecahedron: {
+				label: 'Dodeca',
+				svg: `<svg viewBox="0 0 24 24"><path d="M 3.0 9.03 L 5.11 13.16 M 3.0 9.03 L 7.31 3.71 M 3.0 9.03 L 3.46 12.49 M 10.43 3.88 L 17.13 4.83 M 10.43 3.88 L 7.31 3.71 M 10.43 3.88 L 8.05 9.31 M 5.85 18.76 L 6.87 19.17 M 5.85 18.76 L 11.92 19.45 M 5.85 18.76 L 3.46 12.49 M 13.28 13.61 L 18.89 10.84 M 13.28 13.61 L 11.92 19.45 M 13.28 13.61 L 8.05 9.31 M 10.72 10.39 L 5.11 13.16 M 10.72 10.39 L 12.08 4.55 M 10.72 10.39 L 15.95 14.69 M 18.15 5.24 L 17.13 4.83 M 18.15 5.24 L 12.08 4.55 M 18.15 5.24 L 20.54 11.51 M 13.57 20.12 L 6.87 19.17 M 13.57 20.12 L 16.69 20.29 M 13.57 20.12 L 15.95 14.69 M 21.0 14.97 L 18.89 10.84 M 21.0 14.97 L 16.69 20.29 M 21.0 14.97 L 20.54 11.51 M 5.11 13.16 L 6.87 19.17 M 17.13 4.83 L 18.89 10.84 M 7.31 3.71 L 12.08 4.55 M 11.92 19.45 L 16.69 20.29 M 3.46 12.49 L 8.05 9.31 M 15.95 14.69 L 20.54 11.51"/></svg>`
+			},
+			octahedron: {
+				label: 'Octa',
+				svg: `<svg viewBox="0 0 24 24"><polygon points="12 2 20 12 12 22 4 12"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`
+			},
+			tetrahedron: {
+				label: 'Tetra',
+				svg: `<svg viewBox="0 0 24 24"><polygon points="12 2 21 18 3 18"/><line x1="12" y1="2" x2="12" y2="11"/><line x1="3" y1="18" x2="12" y2="11"/><line x1="21" y1="18" x2="12" y2="11"/></svg>`
+			},
+			plane: {
+				label: 'Plane',
+				svg: `<svg viewBox="0 0 24 24"><polygon points="3 14 12 6 21 10 12 18"/></svg>`
+			},
+			circle: {
+				label: 'Circle',
+				svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>`
+			},
+			ring: {
+				label: 'Ring',
+				svg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>`
+			},
+			extrude: {
+				label: 'Star',
+				svg: `<svg viewBox="0 0 24 24"><polygon points="12 2 15 8 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 8" stroke-dasharray="1 1" opacity="0.5"/><polygon points="10 6 13 12 20 13 15 18 16 25 10 21 4 25 5 18 0 13 7 12"/><line x1="12" y1="2" x2="10" y2="6"/><line x1="15" y1="8" x2="13" y2="12"/><line x1="22" y1="9" x2="20" y2="13"/><line x1="17" y1="14" x2="15" y2="18"/></svg>`
+			},
+			// lathe: {
+			// 	label: 'Lathe',
+			// 	svg: `<svg viewBox="0 0 24 24"><path d="M7 3h10v2c0 3-4 4-4 7s4 4 4 7v2H7v-2c0-3 4-4 4-7s-4-4-4-7V3z"/></svg>`
+			// }
+		};
+
+		let activeShapeName = 'box';
+
+		// Shape Parameter Schemes
+		const shapeParams = {
+			box: {
+				width: { label: 'Width', min: 0.1, max: 10, step: 0.1, default: 2 },
+				height: { label: 'Height', min: 0.1, max: 10, step: 0.1, default: 2 },
+				depth: { label: 'Depth', min: 0.1, max: 10, step: 0.1, default: 2 },
+				widthSegments: { label: 'Width Segments', min: 1, max: 32, step: 1, default: 1 },
+				heightSegments: { label: 'Height Segments', min: 1, max: 32, step: 1, default: 1 },
+				depthSegments: { label: 'Depth Segments', min: 1, max: 32, step: 1, default: 1 }
+			},
+			sphere: {
+				radius: { label: 'Radius', min: 0.1, max: 5, step: 0.1, default: 1 },
+				widthSegments: { label: 'Width Segments', min: 3, max: 64, step: 1, default: 32 },
+				heightSegments: { label: 'Height Segments', min: 2, max: 64, step: 1, default: 16 },
+				phiStart: { label: 'Phi Start', min: 0, max: Math.PI * 2, step: 0.05, default: 0 },
+				phiLength: { label: 'Phi Length', min: 0, max: Math.PI * 2, step: 0.05, default: Math.PI * 2 },
+				thetaStart: { label: 'Theta Start', min: 0, max: Math.PI, step: 0.05, default: 0 },
+				thetaLength: { label: 'Theta Length', min: 0, max: Math.PI, step: 0.05, default: Math.PI }
+			},
+			cylinder: {
+				radiusTop: { label: 'Radius Top', min: 0, max: 5, step: 0.1, default: 1 },
+				radiusBottom: { label: 'Radius Bottom', min: 0, max: 5, step: 0.1, default: 1 },
+				height: { label: 'Height', min: 0.1, max: 10, step: 0.1, default: 2 },
+				radialSegments: { label: 'Radial Segments', min: 3, max: 256, step: 1, default: 32 },
+				heightSegments: { label: 'Height Segments', min: 1, max: 20, step: 1, default: 1 },
+				openEnded: { label: 'Open Ended', type: 'checkbox', default: false }
+			},
+			cone: {
+				radius: { label: 'Radius', min: 0.1, max: 5, step: 0.1, default: 1 },
+				height: { label: 'Height', min: 0.1, max: 10, step: 0.1, default: 2 },
+				radialSegments: { label: 'Radial Segments', min: 3, max: 256, step: 1, default: 32 },
+				heightSegments: { label: 'Height Segments', min: 1, max: 20, step: 1, default: 1 },
+				openEnded: { label: 'Open Ended', type: 'checkbox', default: false }
+			},
+			capsule: {
+				radius: { label: 'Radius', min: 0.1, max: 5, step: 0.1, default: 1 },
+				length: { label: 'Length', min: 0.1, max: 10, step: 0.1, default: 2 },
+				capSegments: { label: 'Cap Segments', min: 1, max: 32, step: 1, default: 8 },
+				radialSegments: { label: 'Radial Segments', min: 3, max: 64, step: 1, default: 16 }
+			},
+			tube: {
+				innerRadius: { label: 'Inner Radius', min: 0.1, max: 5, step: 0.1, default: 0.5 },
+				outerRadius: { label: 'Outer Radius', min: 0.2, max: 10, step: 0.1, default: 1 },
+				segments: { label: 'Segments', min: 3, max: 256, step: 1, default: 64 },
+				depth: { label: 'Depth', min: 0.1, max: 10, step: 0.1, default: 1 },
+				bevelEnabled: { label: 'Bevel', type: 'checkbox', default: true },
+				bevelThickness: { label: 'Bevel Thick', min: 0.01, max: 1, step: 0.01, default: 0.15 },
+				bevelSize: { label: 'Bevel Size', min: 0.01, max: 1, step: 0.01, default: 0.08 },
+				bevelSegments: { label: 'Bevel Segments', min: 1, max: 16, step: 1, default: 3 }
+			},
+			torus: {
+				radius: { label: 'Radius', min: 0.1, max: 5, step: 0.1, default: 1 },
+				tube: { label: 'Tube Radius', min: 0.05, max: 2, step: 0.05, default: 0.25 },
+				radialSegments: { label: 'Radial Segments', min: 3, max: 64, step: 1, default: 16 },
+				tubularSegments: { label: 'Tubular Segments', min: 3, max: 256, step: 1, default: 64 },
+				arc: { label: 'Arc Angle', min: 0.1, max: Math.PI * 2, step: 0.05, default: Math.PI * 2 }
+			},
+			torusKnot: {
+				radius: { label: 'Radius', min: 0.1, max: 10, step: 0.1, default: 1 },
+				tube: { label: 'Tube Radius', min: 0.05, max: 1.5, step: 0.05, default: 0.25 },
+				tubularSegments: { label: 'Tubular Segments', min: 10, max: 512, step: 1, default: 128 },
+				radialSegments: { label: 'Radial Segments', min: 3, max: 64, step: 1, default: 16 },
+				p: { label: 'P (Axis Wind)', min: 1, max: 20, step: 1, default: 2 },
+				q: { label: 'Q (Tube Wind)', min: 1, max: 20, step: 1, default: 3 }
+			},
+			icosahedron: {
+				radius: { label: 'Radius', min: 0.1, max: 10, step: 0.1, default: 1 },
+				detail: { label: 'Detail', min: 0, max: 20, step: 1, default: 0 }
+			},
+			dodecahedron: {
+				radius: { label: 'Radius', min: 0.1, max: 10, step: 0.1, default: 1 },
+				detail: { label: 'Detail', min: 0, max: 14, step: 1, default: 0 }
+			},
+			octahedron: {
+				radius: { label: 'Radius', min: 0.1, max: 10, step: 0.1, default: 1 },
+				detail: { label: 'Detail', min: 0, max: 31, step: 1, default: 0 }
+			},
+			tetrahedron: {
+				radius: { label: 'Radius', min: 0.1, max: 10, step: 0.1, default: 1 },
+				detail: { label: 'Detail', min: 0, max: 44, step: 1, default: 0 }
+			},
+			extrude: {
+				depth: { label: 'Depth', min: 0.1, max: 5, step: 0.1, default: 1 },
+				bevelEnabled: { label: 'Bevel', type: 'checkbox', default: true },
+				bevelThickness: { label: 'Bevel Thick', min: 0.01, max: 1, step: 0.01, default: 0.1 },
+				bevelSize: { label: 'Bevel Size', min: 0.01, max: 1, step: 0.01, default: 0.1 },
+				bevelSegments: { label: 'Bevel Segments', min: 1, max: 16, step: 1, default: 4 }
+			},
+			lathe: {
+				segments: { label: 'Segments', min: 3, max: 64, step: 1, default: 16 },
+				phiStart: { label: 'Phi Start', min: 0, max: Math.PI * 2, step: 0.05, default: 0 },
+				phiLength: { label: 'Phi Length', min: 0, max: Math.PI * 2, step: 0.05, default: Math.PI * 2 }
+			},
+			plane: {
+				width: { label: 'Width', min: 0.1, max: 10, step: 0.1, default: 2 },
+				height: { label: 'Height', min: 0.1, max: 10, step: 0.1, default: 2 },
+				widthSegments: { label: 'Width Segments', min: 1, max: 32, step: 1, default: 1 },
+				heightSegments: { label: 'Height Segments', min: 1, max: 32, step: 1, default: 1 }
+			},
+			circle: {
+				radius: { label: 'Radius', min: 0.1, max: 10, step: 0.1, default: 1 },
+				segments: { label: 'Segments', min: 3, max: 256, step: 1, default: 32 },
+				thetaStart: { label: 'Theta Start', min: 0, max: Math.PI * 2, step: 0.05, default: 0 },
+				thetaLength: { label: 'Theta Length', min: 0, max: Math.PI * 2, step: 0.05, default: Math.PI * 2 }
+			},
+			ring: {
+				innerRadius: { label: 'Inner Radius', min: 0.1, max: 5, step: 0.1, default: 0.5 },
+				outerRadius: { label: 'Outer Radius', min: 0.2, max: 10, step: 0.1, default: 1 },
+				thetaSegments: { label: 'Theta Segments', min: 3, max: 256, step: 1, default: 32 },
+				phiSegments: { label: 'Phi Segments', min: 1, max: 32, step: 1, default: 8 },
+				thetaStart: { label: 'Theta Start', min: 0, max: Math.PI * 2, step: 0.05, default: 0 },
+				thetaLength: { label: 'Theta Length', min: 0, max: Math.PI * 2, step: 0.05, default: Math.PI * 2 }
+			}
+		};
+
+		// State Variables
+		const values = {};
+		const materialSettings = {
+			color: '#c6e7fb',
+			roughness: 0.2,
+			metalness: 0.2,
+			wireframe: false,
+			flatShading: false,
+			gridTexture: false
+		};
+
+		let scene, camera, renderer, controls;
+		let currentMesh, currentGeometry, currentMaterial;
+		let gridHelper, axesHelper, shadowPlane;
+		const floorY = -3;
+		let lastActiveShape = null;
+
+		// DOM Elements
+		const dynamicParamsContainer = document.getElementById('dynamic-params');
+		const materialColorInput = document.getElementById('material-color');
+		const colorHexLabel = document.getElementById('color-hex-label');
+		const materialRoughnessInput = document.getElementById('material-roughness');
+		const valRoughness = document.getElementById('val-roughness');
+		const materialMetalnessInput = document.getElementById('material-metalness');
+		const valMetalness = document.getElementById('val-metalness');
+		const materialFlatCheckbox = document.getElementById('material-flat');
+		const btnWireframe = document.getElementById('btn-wireframe');
+		const materialGridCheckbox = document.getElementById('material-grid');
+
+		const btnExport = document.getElementById('btn-export');
+		const btnGrid = document.getElementById('btn-grid');
+		const btnAxes = document.getElementById('btn-axes');
+		const btnResetCam = document.getElementById('btn-reset-cam');
+
+		// Initialize Default Parameter Values
+		for (const [shape, params] of Object.entries(shapeParams)) {
+			values[shape] = {};
+			for (const [paramName, config] of Object.entries(params)) {
+				values[shape][paramName] = config.default;
+			}
+		}
+
+		// App Initialization
+		function init() {
+			const container = document.getElementById('canvas-container');
+			const width = container.clientWidth;
+			const height = container.clientHeight;
+
+			// Scene Setup
+			scene = new THREE.Scene();
+			scene.background = null; // transparent to allow CSS radial gradient to show through
+
+			// Camera Setup
+			camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+
+			// Renderer Setup
+			renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+			renderer.setSize(width, height);
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFShadowMap;
+			renderer.toneMapping = THREE.ACESFilmicToneMapping;
+			renderer.toneMappingExposure = 1.0;
+			container.appendChild(renderer.domElement);
+
+			// Controls Setup
+			controls = new OrbitControls(camera, renderer.domElement);
+			controls.enableDamping = true;
+			controls.dampingFactor = 0.05;
+			controls.maxPolarAngle = Math.PI - 0.2;
+			controls.minDistance = 2;
+			controls.maxDistance = 30;
+
+			setupLights();
+			setupEnvironment();
+
+			// Material Initialization
+			currentMaterial = new THREE.MeshStandardMaterial({
+				color: materialSettings.color,
+				roughness: materialSettings.roughness,
+				metalness: materialSettings.metalness,
+				wireframe: materialSettings.wireframe,
+				flatShading: materialSettings.flatShading,
+				map: materialSettings.gridTexture ? gridTexture : null
+			});
+
+			// Render default shape
+			rebuildGeometry();
+
+			// Build initial Parameter controls
+			buildControlsUI();
+
+			// Render Shape Grid
+			const shapeGrid = document.getElementById('shape-grid');
+			shapeGrid.innerHTML = '';
+
+			for (const [shapeKey, shapeInfo] of Object.entries(shapesData)) {
+				const item = document.createElement('div');
+				item.className = 'shape-item';
+				if (shapeKey === activeShapeName) {
+					item.classList.add('active');
+				}
+				item.dataset.shape = shapeKey;
+				item.innerHTML = `
+					${shapeInfo.svg}
+					<span>${shapeInfo.label}</span>
+				`;
+
+				item.addEventListener('click', () => {
+					document.querySelectorAll('.shape-item').forEach(el => el.classList.remove('active'));
+					item.classList.add('active');
+					activeShapeName = shapeKey;
+					buildControlsUI();
+					rebuildGeometry();
+				});
+
+				shapeGrid.appendChild(item);
+			}
+
+			// Event Listeners
+			window.addEventListener('resize', onWindowResize);
+
+			// Material Control Event Listeners
+			materialColorInput.addEventListener('input', (e) => {
+				materialSettings.color = e.target.value;
+				colorHexLabel.textContent = e.target.value;
+				currentMaterial.color.set(materialSettings.color);
+			});
+			materialRoughnessInput.addEventListener('input', (e) => {
+				const val = parseFloat(e.target.value);
+				materialSettings.roughness = val;
+				valRoughness.textContent = val.toFixed(2);
+				currentMaterial.roughness = val;
+			});
+			materialMetalnessInput.addEventListener('input', (e) => {
+				const val = parseFloat(e.target.value);
+				materialSettings.metalness = val;
+				valMetalness.textContent = val.toFixed(2);
+				currentMaterial.metalness = val;
+			});
+			materialFlatCheckbox.addEventListener('change', (e) => {
+				materialSettings.flatShading = e.target.checked;
+				currentMaterial.flatShading = materialSettings.flatShading;
+				currentMaterial.needsUpdate = true;
+			});
+			materialGridCheckbox.addEventListener('change', (e) => {
+				materialSettings.gridTexture = e.target.checked;
+				currentMaterial.map = materialSettings.gridTexture ? gridTexture : null;
+				currentMaterial.needsUpdate = true;
+			});
+
+			// Exporter
+			btnExport.addEventListener('click', doExport);
+
+			// HUD Toggles
+			btnGrid.addEventListener('click', toggleGrid);
+			btnAxes.addEventListener('click', toggleAxes);
+			btnWireframe.addEventListener('click', toggleWireframe);
+			btnResetCam.addEventListener('click', resetCameraPosition);
+
+			// Start loop
+			animate();
+		}
+
+		function setupLights() {
+			const keyLight = new THREE.DirectionalLight(0xffffff, 0.8 * Math.PI);
+			keyLight.position.set(6, 10, 8);
+			keyLight.castShadow = true;
+			keyLight.shadow.mapSize.width = 2048;
+			keyLight.shadow.mapSize.height = 2048;
+			keyLight.shadow.camera.near = 0.5;
+			keyLight.shadow.camera.far = 25;
+			keyLight.shadow.camera.left = -6;
+			keyLight.shadow.camera.right = 6;
+			keyLight.shadow.camera.top = 6;
+			keyLight.shadow.camera.bottom = -6;
+			keyLight.shadow.bias = -0.0002;
+			keyLight.shadow.radius = 4;
+			scene.add(keyLight);
+
+			const ambientLight = new THREE.AmbientLight(0xffffff, 0.2 * Math.PI);
+			scene.add(ambientLight);
+		}
+
+		function setupEnvironment() {
+
+			// Ground plane to receive shadows
+			const shadowPlaneGeo = new THREE.PlaneGeometry(100, 100);
+			const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.35 });
+			shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
+			shadowPlane.rotation.x = -Math.PI / 2;
+			shadowPlane.position.y = floorY;
+			shadowPlane.receiveShadow = true;
+			scene.add(shadowPlane);
+
+			// Colored grid helper matching theme (Teal/Slate lines)
+			gridHelper = new THREE.GridHelper(30, 30, 0x14b8a6, 0xcbd5e1);
+			gridHelper.position.y = floorY;
+			scene.add(gridHelper);
+
+			// Thick Axes helper using cylinders and cones
+			axesHelper = new THREE.Group();
+			axesHelper.renderOrder = 9999;
+
+			const axisRadius = 0.01;
+			const axisLength = 1;
+			const coneRadius = 0.04;
+			const coneHeight = 0.25;
+
+			// X Axis (Red)
+			const xGeo = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength, 8);
+			const xConeGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 8);
+			const xMat = new THREE.MeshBasicMaterial({ color: 0xef4444, depthTest: false, depthWrite: false });
+
+			const xAxis = new THREE.Mesh(xGeo, xMat);
+			xAxis.rotation.z = -Math.PI / 2;
+			xAxis.position.x = axisLength / 2;
+			xAxis.renderOrder = 9999;
+			axesHelper.add(xAxis);
+
+			const xCone = new THREE.Mesh(xConeGeo, xMat);
+			xCone.rotation.z = -Math.PI / 2;
+			xCone.position.x = axisLength + coneHeight / 2;
+			xCone.renderOrder = 9999;
+			axesHelper.add(xCone);
+
+			// Y Axis (Green)
+			const yGeo = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength, 8);
+			const yConeGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 8);
+			const yMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, depthTest: false, depthWrite: false });
+
+			const yAxis = new THREE.Mesh(yGeo, yMat);
+			yAxis.position.y = axisLength / 2;
+			yAxis.renderOrder = 9999;
+			axesHelper.add(yAxis);
+
+			const yCone = new THREE.Mesh(yConeGeo, yMat);
+			yCone.position.y = axisLength + coneHeight / 2;
+			yCone.renderOrder = 9999;
+			axesHelper.add(yCone);
+
+			// Z Axis (Blue)
+			const zGeo = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength, 8);
+			const zConeGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 8);
+			const zMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, depthTest: false, depthWrite: false });
+
+			const zAxis = new THREE.Mesh(zGeo, zMat);
+			zAxis.rotation.x = Math.PI / 2;
+			zAxis.position.z = axisLength / 2;
+			zAxis.renderOrder = 9999;
+			axesHelper.add(zAxis);
+
+			const zCone = new THREE.Mesh(zConeGeo, zMat);
+			zCone.rotation.x = Math.PI / 2;
+			zCone.position.z = axisLength + coneHeight / 2;
+			zCone.renderOrder = 9999;
+			axesHelper.add(zCone);
+
+			axesHelper.position.set(0, 0, 0);
+			scene.add(axesHelper);
+
+			// Load saved Grid visibility from localStorage
+			const savedGridVisible = localStorage.getItem('shape_generator_grid_visible');
+			gridHelper.visible = savedGridVisible == null || savedGridVisible === 'true';
+			btnGrid.classList.toggle('active', gridHelper.visible);
+
+			// Load saved Axes visibility from localStorage
+			const savedAxesVisible = localStorage.getItem('shape_generator_axes_visible');
+			axesHelper.visible = savedAxesVisible == null || savedAxesVisible === 'true';
+			btnAxes.classList.toggle('active', axesHelper.visible);
+		}
+
+		function resetCameraPosition() {
+			const targetY = currentMesh ? currentMesh.position.y : 0;
+			camera.position.set(4, 3 + targetY, 6);
+			if (controls) {
+				controls.target.set(0, targetY, 0);
+				controls.update();
+			}
+		}
+
+		function toggleGrid() {
+			gridHelper.visible = !gridHelper.visible;
+			btnGrid.classList.toggle('active', gridHelper.visible);
+			localStorage.setItem('shape_generator_grid_visible', gridHelper.visible);
+		}
+
+		function toggleAxes() {
+			axesHelper.visible = !axesHelper.visible;
+			btnAxes.classList.toggle('active', axesHelper.visible);
+			localStorage.setItem('shape_generator_axes_visible', axesHelper.visible);
+		}
+
+		function toggleWireframe() {
+			materialSettings.wireframe = !materialSettings.wireframe;
+			currentMaterial.wireframe = materialSettings.wireframe;
+			btnWireframe.classList.toggle('active', materialSettings.wireframe);
+		}
+
+		// Dynamic UI Builder for Parameters
+		function buildControlsUI() {
+			const shape = activeShapeName;
+			const paramsSchema = shapeParams[shape];
+			const currentShapeValues = values[shape];
+
+			dynamicParamsContainer.innerHTML = '';
+
+			for (const [paramName, config] of Object.entries(paramsSchema)) {
+				const field = document.createElement('div');
+				field.className = 'form-field';
+
+				const label = document.createElement('label');
+				label.setAttribute('for', `param-${paramName}`);
+				label.textContent = config.label;
+
+				let input;
+
+				if (config.type === 'checkbox') {
+					field.className = 'form-field checkbox-row';
+					input = document.createElement('input');
+					input.type = 'checkbox';
+					input.id = `param-${paramName}`;
+					input.checked = currentShapeValues[paramName];
+
+					input.addEventListener('change', (e) => {
+						currentShapeValues[paramName] = e.target.checked;
+						rebuildGeometry();
+					});
+
+					field.appendChild(label);
+					field.appendChild(input);
+				} else {
+					// Range input (slider)
+					const valSpan = document.createElement('span');
+					valSpan.className = 'val';
+					valSpan.id = `lbl-param-${paramName}`;
+					valSpan.textContent = formatParamVal(currentShapeValues[paramName]);
+					label.appendChild(valSpan);
+
+					input = document.createElement('input');
+					input.type = 'range';
+					input.id = `param-${paramName}`;
+					input.min = config.min;
+					input.max = config.max;
+					input.step = config.step;
+					input.value = currentShapeValues[paramName];
+
+					input.addEventListener('input', (e) => {
+						const val = parseFloat(e.target.value);
+						currentShapeValues[paramName] = val;
+						valSpan.textContent = formatParamVal(val);
+						rebuildGeometry();
+					});
+
+					field.appendChild(label);
+					field.appendChild(input);
+				}
+
+				dynamicParamsContainer.appendChild(field);
+			}
+		}
+
+		function formatParamVal(val) {
+			if (Number.isInteger(val)) return val;
+			// round nicely to 2 decimal places max
+			return Number(val.toFixed(2));
+		}
+
+		// Geometry Generation Logic
+		function rebuildGeometry() {
+			const shape = activeShapeName;
+			const params = values[shape];
+
+			if (currentGeometry) {
+				currentGeometry.dispose();
+			}
+
+			switch (shape) {
+				case 'box':
+					currentGeometry = new THREE.BoxGeometry(
+						params.width,
+						params.height,
+						params.depth,
+						params.widthSegments,
+						params.heightSegments,
+						params.depthSegments
+					);
+					break;
+				case 'sphere':
+					currentGeometry = new THREE.SphereGeometry(
+						params.radius,
+						params.widthSegments,
+						params.heightSegments,
+						params.phiStart,
+						params.phiLength,
+						params.thetaStart,
+						params.thetaLength
+					);
+					break;
+				case 'torus':
+					currentGeometry = new THREE.TorusGeometry(
+						params.radius,
+						params.tube,
+						params.radialSegments,
+						params.tubularSegments,
+						params.arc
+					);
+					currentGeometry.rotateX(-Math.PI / 2);
+					break;
+				case 'torusKnot':
+					currentGeometry = new THREE.TorusKnotGeometry(
+						params.radius,
+						params.tube,
+						params.tubularSegments,
+						params.radialSegments,
+						params.p,
+						params.q
+					);
+					currentGeometry.rotateX(-Math.PI / 2);
+					break;
+				case 'cone':
+					currentGeometry = new THREE.ConeGeometry(
+						params.radius,
+						params.height,
+						params.radialSegments,
+						params.heightSegments,
+						params.openEnded
+					);
+					break;
+				case 'cylinder':
+					currentGeometry = new THREE.CylinderGeometry(
+						params.radiusTop,
+						params.radiusBottom,
+						params.height,
+						params.radialSegments,
+						params.heightSegments,
+						params.openEnded
+					);
+					break;
+				case 'capsule':
+					currentGeometry = new THREE.CapsuleGeometry(
+						params.radius,
+						params.length,
+						params.capSegments,
+						params.radialSegments
+					);
+					break;
+				case 'circle':
+					currentGeometry = new THREE.CircleGeometry(
+						params.radius,
+						params.segments,
+						params.thetaStart,
+						params.thetaLength
+					);
+					currentGeometry.rotateX(-Math.PI / 2);
+					break;
+				case 'dodecahedron':
+					currentGeometry = new THREE.DodecahedronGeometry(
+						params.radius,
+						params.detail
+					);
+					break;
+				case 'extrude':
+					currentGeometry = new THREE.ExtrudeGeometry(
+						starShape,
+						{
+							depth: params.depth,
+							bevelEnabled: params.bevelEnabled,
+							bevelThickness: params.bevelThickness,
+							bevelSize: params.bevelSize,
+							bevelSegments: params.bevelSegments
+						}
+					);
+					currentGeometry.rotateX(-Math.PI / 2);
+					break;
+				case 'icosahedron':
+					currentGeometry = new THREE.IcosahedronGeometry(
+						params.radius,
+						params.detail
+					);
+					break;
+				case 'lathe':
+					currentGeometry = new THREE.LatheGeometry(
+						lathePoints,
+						params.segments,
+						params.phiStart,
+						params.phiLength
+					);
+					break;
+				case 'octahedron':
+					currentGeometry = new THREE.OctahedronGeometry(
+						params.radius,
+						params.detail
+					);
+					break;
+				case 'plane':
+					currentGeometry = new THREE.PlaneGeometry(
+						params.width,
+						params.height,
+						params.widthSegments,
+						params.heightSegments
+					);
+					currentGeometry.rotateX(-Math.PI / 2);
+					break;
+				case 'ring':
+					currentGeometry = new THREE.RingGeometry(
+						params.innerRadius,
+						params.outerRadius,
+						params.thetaSegments,
+						params.phiSegments,
+						params.thetaStart,
+						params.thetaLength
+					);
+					currentGeometry.rotateX(-Math.PI / 2);
+					break;
+				case 'tube':
+					{
+						const ringShape = new THREE.Shape();
+						const segs = params.segments;
+
+						// Outer boundary
+						for (let i = 0; i < segs; i++) {
+							const angle = (i / segs) * Math.PI * 2;
+							const x = Math.cos(angle) * params.outerRadius;
+							const y = Math.sin(angle) * params.outerRadius;
+							if (i === 0) {
+								ringShape.moveTo(x, y);
+							} else {
+								ringShape.lineTo(x, y);
+							}
+						}
+						ringShape.closePath();
+
+						// Inner boundary (hole) in the opposite direction
+						const holePath = new THREE.Path();
+						for (let i = 0; i < segs; i++) {
+							const angle = (1 - i / segs) * Math.PI * 2;
+							const x = Math.cos(angle) * params.innerRadius;
+							const y = Math.sin(angle) * params.innerRadius;
+							if (i === 0) {
+								holePath.moveTo(x, y);
+							} else {
+								holePath.lineTo(x, y);
+							}
+						}
+						holePath.closePath();
+						ringShape.holes.push(holePath);
+
+						currentGeometry = new THREE.ExtrudeGeometry(ringShape, {
+							depth: params.depth,
+							bevelEnabled: params.bevelEnabled,
+							bevelThickness: params.bevelThickness,
+							bevelSize: params.bevelSize,
+							bevelSegments: params.bevelSegments
+						});
+						currentGeometry.rotateX(-Math.PI / 2);
+					}
+					break;
+				case 'tetrahedron':
+					currentGeometry = new THREE.TetrahedronGeometry(
+						params.radius,
+						params.detail
+					);
+					break;
+			}
+
+			// Re-assign or create mesh
+			if (!currentMesh) {
+				currentMesh = new THREE.Mesh(currentGeometry, currentMaterial);
+				currentMesh.castShadow = true;
+				currentMesh.receiveShadow = true;
+				scene.add(currentMesh);
+			} else {
+				currentMesh.geometry = currentGeometry;
+			}
+
+			// Position the object on the floor
+			currentGeometry.computeBoundingBox();
+			const minY = currentGeometry.boundingBox.min.y;
+			currentMesh.position.y = floorY - minY;
+
+			if (axesHelper) {
+				axesHelper.position.copy(currentMesh.position);
+			}
+
+			if (lastActiveShape !== shape) {
+				resetCameraPosition();
+				lastActiveShape = shape;
+			}
+
+			updateStats();
+		}
+
+		// Update vertex & triangle counts in the HUD
+		function updateStats() {
+			if (!currentGeometry) return;
+
+			const positionAttr = currentGeometry.attributes.position;
+			const vertexCount = positionAttr ? positionAttr.count : 0;
+
+			const indexAttr = currentGeometry.index;
+			let faceCount = 0;
+			if (indexAttr) {
+				faceCount = indexAttr.count / 3;
+			} else if (positionAttr) {
+				faceCount = positionAttr.count / 3;
+			}
+
+			document.getElementById('vertex-count').textContent = vertexCount.toLocaleString();
+			document.getElementById('face-count').textContent = Math.round(faceCount).toLocaleString();
+		}
+
+		// Collada Export Action
+		function doExport() {
+			if (!currentMesh) return;
+
+			btnExport.disabled = true;
+			const originalText = btnExport.innerHTML;
+			btnExport.innerHTML = `
+				<svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+					<line x1="12" y1="2" x2="12" y2="6"></line>
+					<line x1="12" y1="18" x2="12" y2="22"></line>
+					<line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+					<line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+					<line x1="2" y1="12" x2="6" y2="12"></line>
+					<line x1="18" y1="12" x2="22" y2="12"></line>
+					<line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+					<line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+				</svg>
+				Exporting...
+			`;
+
+			// Export only the mesh object
+			const exporter = new ColladaExporter();
+
+			// Wrap in a setTimeout to let the export UI update instantly
+			setTimeout(() => {
+				try {
+					exporter.parse(currentMesh, function (result) {
+						const xmlContent = result.data;
+						const blob = new Blob([xmlContent], { type: 'text/xml' });
+
+						const link = document.createElement('a');
+						link.style.display = 'none';
+						document.body.appendChild(link);
+						link.href = URL.createObjectURL(blob);
+						link.download = `${activeShapeName}_shape.dae`;
+						link.click();
+
+						document.body.removeChild(link);
+						showToast('Export successful! .dae file downloaded.');
+					}, {
+						version: '1.4.1',
+						author: '3D Shape Generator'
+					});
+				} catch (error) {
+					console.error("Collada export failed:", error);
+					showToast('Export failed. Check console for details.');
+				} finally {
+					btnExport.disabled = false;
+					btnExport.innerHTML = originalText;
+				}
+			}, 300);
+		}
+
+		// Toast Alert notification helper
+		function showToast(message) {
+			const toast = document.getElementById('toast');
+			const toastMsg = document.getElementById('toast-message');
+			toastMsg.textContent = message;
+			toast.classList.add('show');
+
+			setTimeout(() => {
+				toast.classList.remove('show');
+			}, 3000);
+		}
+
+		// Animation / Render Loop
+		function animate() {
+			requestAnimationFrame(animate);
+
+			// Rotate shape slightly over time for a lively preview if no user interaction is occurring
+			if (currentMesh && !controls.state === -1) {
+				currentMesh.rotation.y += 0.002;
+			}
+
+			controls.update();
+			renderer.render(scene, camera);
+		}
+
+		// Window Resize Handler
+		function onWindowResize() {
+			const container = document.getElementById('canvas-container');
+			const width = container.clientWidth;
+			const height = container.clientHeight;
+
+			camera.aspect = width / height;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(width, height);
+		}
+
+		// Keyframe spinning key animation
+		const style = document.createElement('style');
+		style.innerHTML = `
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+		`;
+		document.head.appendChild(style);
+
+		// Initialize after DOM load
+		window.addEventListener('DOMContentLoaded', init);
+	</script>
+</body>
+</html>
