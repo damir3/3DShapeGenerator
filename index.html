@@ -173,9 +173,15 @@
 			border: 1px solid rgba(0, 0, 0, 0.08);
 		}
 
-		.sidebar .form-field label span.val {
+		.sidebar .form-field label span.val,
+		.sidebar .form-field input.val {
 			background: rgba(0, 0, 0, 0.05);
 			color: var(--text-primary);
+		}
+
+		.sidebar .form-field input.val:focus {
+			background: rgba(0, 0, 0, 0.08);
+			border-color: var(--accent-indigo);
 		}
 
 		.section-title {
@@ -212,16 +218,19 @@
 			padding: 6px 0;
 		}
 
-		.form-field label {
+		.form-field label,
+		.label-container {
 			font-size: 0.85rem;
 			font-weight: 500;
 			color: var(--text-secondary);
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
+			width: 100%;
 		}
 
-		.form-field label span.val {
+		.form-field label span.val,
+		.form-field input.val {
 			color: var(--text-primary);
 			font-weight: 600;
 			font-family: monospace;
@@ -229,6 +238,27 @@
 			background: rgba(255, 255, 255, 0.05);
 			padding: 2px 6px;
 			border-radius: 4px;
+		}
+
+		.form-field input.val {
+			border: 1px solid transparent;
+			width: 65px;
+			text-align: right;
+			outline: none;
+			-moz-appearance: textfield;
+			transition: all 0.15s ease;
+		}
+
+		.form-field input.val::-webkit-outer-spin-button,
+		.form-field input.val::-webkit-inner-spin-button {
+			-webkit-appearance: none;
+			margin: 0;
+		}
+
+		.form-field input.val:focus {
+			background: rgba(255, 255, 255, 0.1);
+			border-color: var(--accent-indigo);
+			box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
 		}
 
 		select {
@@ -682,12 +712,18 @@
 					</div>
 					<!-- Roughness -->
 					<div class="form-field">
-						<label for="material-roughness">Roughness <span class="val" id="val-roughness">0.2</span></label>
+						<div class="label-container">
+							<label for="material-roughness">Roughness</label>
+							<input type="number" class="val" id="val-roughness" min="0" max="1" step="0.01" value="0.2">
+						</div>
 						<input type="range" id="material-roughness" min="0" max="1" step="0.01" value="0.2">
 					</div>
 					<!-- Metalness -->
 					<div class="form-field">
-						<label for="material-metalness">Metalness <span class="val" id="val-metalness">0.2</span></label>
+						<div class="label-container">
+							<label for="material-metalness">Metalness</label>
+							<input type="number" class="val" id="val-metalness" min="0" max="1" step="0.01" value="0.2">
+						</div>
 						<input type="range" id="material-metalness" min="0" max="1" step="0.01" value="0.2">
 					</div>
 					<!-- Shading Toggles -->
@@ -1156,18 +1192,19 @@
 				colorHexLabel.textContent = e.target.value;
 				currentMaterial.color.set(materialSettings.color);
 			});
-			materialRoughnessInput.addEventListener('input', (e) => {
-				const val = parseFloat(e.target.value);
-				materialSettings.roughness = val;
-				valRoughness.textContent = val.toFixed(2);
-				currentMaterial.roughness = val;
-			});
-			materialMetalnessInput.addEventListener('input', (e) => {
-				const val = parseFloat(e.target.value);
-				materialSettings.metalness = val;
-				valMetalness.textContent = val.toFixed(2);
-				currentMaterial.metalness = val;
-			});
+			setupBidirectionalSync(materialRoughnessInput, valRoughness, 0, 1, 0.2,
+				(val) => {
+					materialSettings.roughness = val;
+					currentMaterial.roughness = val;
+				}
+			);
+
+			setupBidirectionalSync( materialMetalnessInput, valMetalness, 0, 1, 0.2,
+				(val) => {
+					materialSettings.metalness = val;
+					currentMaterial.metalness = val;
+				}
+			);
 			materialFlatCheckbox.addEventListener('change', (e) => {
 				materialSettings.flatShading = e.target.checked;
 				currentMaterial.flatShading = materialSettings.flatShading;
@@ -1361,11 +1398,25 @@
 					field.appendChild(input);
 				} else {
 					// Range input (slider)
-					const valSpan = document.createElement('span');
-					valSpan.className = 'val';
-					valSpan.id = `lbl-param-${paramName}`;
-					valSpan.textContent = formatParamVal(currentShapeValues[paramName]);
-					label.appendChild(valSpan);
+					const container = document.createElement('div');
+					container.className = 'label-container';
+
+					const label = document.createElement('label');
+					label.setAttribute('for', `param-${paramName}`);
+					label.textContent = config.label;
+					container.appendChild(label);
+
+					const valInput = document.createElement('input');
+					valInput.type = 'number';
+					valInput.className = 'val';
+					valInput.id = `lbl-param-${paramName}`;
+					valInput.min = config.min;
+					valInput.max = config.max;
+					valInput.step = config.step;
+					valInput.value = formatParamVal(currentShapeValues[paramName]);
+					container.appendChild(valInput);
+
+					field.appendChild(container);
 
 					input = document.createElement('input');
 					input.type = 'range';
@@ -1375,14 +1426,13 @@
 					input.step = config.step;
 					input.value = currentShapeValues[paramName];
 
-					input.addEventListener('input', (e) => {
-						const val = parseFloat(e.target.value);
-						currentShapeValues[paramName] = val;
-						valSpan.textContent = formatParamVal(val);
-						rebuildGeometry();
-					});
+					setupBidirectionalSync(input, valInput, config.min, config.max, config.default,
+						(val) => {
+							currentShapeValues[paramName] = val;
+							rebuildGeometry();
+						}
+					);
 
-					field.appendChild(label);
 					field.appendChild(input);
 				}
 
@@ -1394,6 +1444,39 @@
 			if (Number.isInteger(val)) return val;
 			// round nicely to 2 decimal places max
 			return Number(val.toFixed(2));
+		}
+
+		function setupBidirectionalSync(sliderInput, numberInput, min, max, defaultValue, updateCallback) {
+			sliderInput.addEventListener('input', (e) => {
+				const val = parseFloat(e.target.value);
+				numberInput.value = formatParamVal(val);
+				updateCallback(val);
+			});
+
+			numberInput.addEventListener('input', (e) => {
+				const val = parseFloat(e.target.value);
+				if (isNaN(val)) return;
+				sliderInput.value = val;
+				updateCallback(val);
+			});
+
+			numberInput.addEventListener('change', (e) => {
+				let val = parseFloat(e.target.value);
+				if (isNaN(val)) {
+					val = defaultValue;
+				} else {
+					val = Math.min(Math.max(val, min), max);
+				}
+				numberInput.value = formatParamVal(val);
+				sliderInput.value = val;
+				updateCallback(val);
+			});
+
+			numberInput.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') {
+					numberInput.blur();
+				}
+			});
 		}
 
 		// Geometry Generation Logic
